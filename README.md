@@ -1,6 +1,6 @@
 # ProyectoAjedrez
-Proyecto final del curso de Programación bajo plataformas abiertas
-Esta versión contiene una estructura simplificada para presentar el juego.
+Proyecto final del curso de Programación bajo plataformas abiertas. Esta versión contiene una estructura simplificada para presentar el juego.
+
 Existe otra rama con la implementación de un modelo cliente-servidor.
 
 ### Instrucciones
