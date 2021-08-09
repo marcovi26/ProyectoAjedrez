@@ -6,6 +6,16 @@
 #include <stdlib.h> // Para system entre otras
 #include "movida.h" // Archivo de cabecera para las funciones de movimientos
 
+//Librerias para programación de sockets
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/types.h>
+
+
 struct Ajedrez
 {
   char tab[8][8]; //Definimos el tablero de ajedrez como una matriz 8x8
@@ -26,35 +36,68 @@ void cambio_pieza( int f1 , int c1 , int f2 , int c2 );
 int finjuego(void);
 
 
+//variables para la parte de red
+int comunicacion=0;
+int receptor = 0;
+int read_size;
+char buffer_entrada[500]="\0";
+char buffer_salida[500];
+
+struct sockaddr_in info_servidor;
+
+
+void EnviarMensaje(char *mensaje) //Función para enviar mensajes al cliente
+{
+  strcpy(buffer_salida, mensaje);
+  write(comunicacion, buffer_salida, strlen(buffer_salida));
+}
+
 int main() {
 
-  tab_inicializado(); // Iniciamos el tablero con la posición de las fichas
-  char ch;
-  printf( "Bienvenido a Jaquemate, presiona ENTER para empezar" ) ;
-  getchar();
+  receptor = socket(AF_INET, SOCK_STREAM, 0);
+  info_servidor.sin_family = AF_INET;    
+  info_servidor.sin_addr.s_addr = htonl(INADDR_ANY);
+  info_servidor.sin_port = htons(8080);   //Puerto de red, se puede cambiar para usar otro distinto, al igual que en el cliente.
+  info_servidor.sin_addr.s_addr = inet_addr("127.0.0.1"); //Dirreccion IPv4 de la red, se utiliza la de loopback.
 
-turno= BLANCO; //Definimos un turno de inicio
+  bind(receptor, (struct sockaddr*)&info_servidor,  sizeof(info_servidor));
 
-do
-{
-    system( "cls" ); //Limpiamos la consola, clear si Linux o cls si es Windows
-    tab_lleno(); // imprimimos un display del tablero lleno
+  if(listen(receptor, 10) == -1)
+  {
+      printf("Error en receptor.\n");
+      return -1;
+  }
 
-    if( (turno) == 0 )
+  while(1)
+  {
+    comunicacion = accept(receptor, (struct sockaddr*)NULL, NULL);
+
+    if((read_size = recv(comunicacion , buffer_entrada , 500 , 0)) > 0)
+    {
+
+      tab_inicializado(); // Iniciamos el tablero con la posición de las fichas
+      
+      turno= BLANCO; //Definimos un turno de inicio
+
+      do
       {
+        system( "cls" ); //Limpiamos la consola, clear si Linux o cls si es Windows
+        tab_lleno(); // imprimimos un display del tablero lleno
+
+        if( (turno) == 0 )
+        {
             jugador_blanco();
-      }
-    else
-      {
+        }
+        else
+        {
             jugador_negro();
-      }
-
-    printf( " \n\n Presione enter para continuar \n\n " );
-    getchar();
-
-    turno = 1-turno;   //Con esta operacion hacemos el cambio de turno entre blanco y negro
-
-}while(fin==0);
+        }
+        
+        turno = 1-turno;   //Con esta operacion hacemos el cambio de turno entre blanco y negro
+      }while(fin==0);
+    }//fin if
+    close(comunicacion);
+  }//fin while red
 
 return 0;
 }//Final Main
@@ -83,25 +126,70 @@ for(int i = 0; i<8 ;i++){
 }//FInal funcion tab_inicializado
 
 void tab_lleno(){
-//Parte del display del tablero
-printf("    a  b  c  d  e  f  g  h \n");
-printf(" +-----------------------+\n");
-for(int i = 0; i<8 ;i++){
-  printf("%d |", i);
-  for(int j = 0; j< 8; j++){
-  printf(" %c ",tablero.tab[i][j]);   //Imprimimos tablero
-  }
-  printf("\n");
-}
-}//final tablleno
+  //Parte del display del tablero
+  EnviarMensaje("    a  b  c  d  e  f  g  h \n");
+  EnviarMensaje(" +-----------------------+\n");
+  for(int i = 0; i<8 ;i++){
+      switch(i){
+        case 0: EnviarMensaje("0 |");
+                      break;
+        case 1: EnviarMensaje("1 |");
+                      break;
+        case 2: EnviarMensaje("2 |");
+                      break;
+        case 3: EnviarMensaje("3 |");
+                      break;
+        case 4: EnviarMensaje("4 |");
+                      break;
+        case 5: EnviarMensaje("5 |");
+                      break;
+        case 6: EnviarMensaje("6 |");
+                      break;
+        case 7: EnviarMensaje("7 |");
+                      break;
+      }
+      for(int j = 0; j< 8; j++){
 
+          switch(tablero.tab[i][j])
+          {
+            case '.': EnviarMensaje(" . ");
+                      break;
+            case 'p': EnviarMensaje(" p ");
+                      break;
+            case 'P': EnviarMensaje(" P ");
+                      break;
+            case 't': EnviarMensaje(" t ");
+                      break;
+            case 'T': EnviarMensaje(" T ");
+                      break;
+            case 'a': EnviarMensaje(" a ");
+                      break;
+            case 'A': EnviarMensaje(" A ");
+                      break;
+            case 'c': EnviarMensaje(" c ");
+                      break;
+            case 'C': EnviarMensaje(" C ");
+                      break;
+            case 'd': EnviarMensaje(" d ");
+                      break;
+            case 'D': EnviarMensaje(" D ");
+                      break;
+            case 'r': EnviarMensaje(" r ");
+                      break;
+            case 'R': EnviarMensaje(" R ");
+                      break;
+          }
+      }
+      EnviarMensaje("\n");
+    }
+}//final tablleno
 
 void jugador_blanco()   //Existen una función para cada jugador
 {   int f1, c1;         //Coordenadas posicion inicial de la pieza
     int f2, c2;         //Coordenadas posicion final de la pieza
 
 
-    printf( " \n Siguiente: Jugador 1 - Blancas - Mayuscula\n" ) ;
+    EnviarMensaje(" \n Siguiente: Jugador 1 - Blancas - Mayuscula\n" ) ;
     again1:
     again2:
     leer_jugada(&f1, &c1, &f2, &c2); //Leemos la jugada por teclado
@@ -110,42 +198,42 @@ void jugador_blanco()   //Existen una función para cada jugador
     {/*Con este switch verificamos cual pieza se selecciono para
         Estudiar los movimientos permitidos de cada pieza*/
         case 'P': peonB(&f1,&c1,&f2,&c2, tablero.tab, turno);  
-                  if (f2==99)       // en las funciones de movimientos si algo sale
-                  {                 //mal cambiamos el valor de f2 a numero magico 99
-                    goto again2;    // Y comparamos para ver si salio algo mal y devolvernos.  
+                  if (f2==99)                               // en las funciones de movimientos si algo sale
+                  { EnviarMensaje("Error de movimiento");    //mal cambiamos el valor de f2 a numero magico 99
+                    goto again2;                            // Y comparamos para ver si salio algo mal y devolvernos.  
                   }
                   break ;
         case 'R': rey(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
         case 'C': caballo(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
         case 'T': torre(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
         case 'A': alfil(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
         case 'D': reina(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
-        default: printf("Posicion invalida ") ; goto again1 ;
+        default: EnviarMensaje("Posicion invalida ") ; goto again1 ;
     }
 
 //Con esta funcion hacemos el cambio de pieza y verificamos si hay ganador
@@ -157,7 +245,7 @@ void jugador_negro()
     int f2, c2;  //Coordenadas posicion final de la pieza
 
 
-    printf( " \n  Siguiente: Jugador 2 - Negras - minusculas\n" ) ;
+    EnviarMensaje(" \n  Siguiente: Jugador 2 - Negras - minusculas\n" ) ;
     again1:
     again2:
     
@@ -167,41 +255,41 @@ void jugador_negro()
     {
         case 'p': peonN(&f1,&c1,&f2,&c2, tablero.tab, turno);
                   if (f2==99)   
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }       
                   break ;
         case 'r': rey(&f1,&c1,&f2,&c2, tablero.tab, turno) ;
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   } 
                   break ;
         case 'c': caballo(&f1,&c1,&f2,&c2, tablero.tab, turno );
                   if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   } 
                   break ;
         case 't': torre(&f1,&c1,&f2,&c2, tablero.tab, turno);
                  if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   } 
                   break ;
         case 'a': alfil(&f1,&c1,&f2,&c2, tablero.tab, turno);
                  if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   } 
                   break ;
         case 'd': reina(&f1,&c1,&f2,&c2, tablero.tab, turno);
                  if (f2==99)
-                  {
+                  { EnviarMensaje("Error de movimiento");
                     goto again2;
                   }
                   break ;
-        default: printf("Posicion invalida ") ; goto again1 ;
+        default: EnviarMensaje("Posicion invalida ") ; goto again1 ;
     }
 
     cambio_pieza(f1,c1,f2,c2); //Hacemos el cambio de posición de la pieza seleccionada
@@ -211,22 +299,20 @@ void leer_jugada(int *f_inicial, int *c_inicial, int *f_final, int *c_final) {
     
     char movida[15];
     inic:
-    printf("Indique su movida en formato [cf cf] inicial y final respectivamente o comando de parada (retirar o finalizar):\n");
-    fgets(movida,15,stdin); //Obtenemos la movida leyendola del teclado
+    EnviarMensaje("Indique su movida en formato [cf cf] inicial y final respectivamente o comando de parada (retirar o finalizar):\n");
+    read_size = recv(comunicacion , buffer_entrada , 20 , 0); //Obtenemos la movida leyendola del teclado
 
 
-if (movida[3]=='i')   //Verificamos si corresponde al comando retirar
+if (buffer_entrada[3]=='i')   //Verificamos si corresponde al comando retirar
 {
   turno=1-turno;  //hacemos cambio de turno para indicar que gana jugador contrario.  
   finjuego();
-  getchar();
   exit(-1);
 }
 
-else if (movida[1]=='i')    //Verificamos si corresponde al comando finalizar
+else if (buffer_entrada[1]=='i')    //Verificamos si corresponde al comando finalizar
 {
-  printf("Partida finalizada, gracias por jugar y hasta pronto");
-  getchar();
+  EnviarMensaje("\nPartida finalizada, gracias por jugar y hasta pronto\n");
   exit(-1);
 }
 
@@ -239,7 +325,7 @@ else{     //Lectura de movimiento de pieza
         //Este if consiste en verificar que la eleccion de casillas corresponda a un valor del rango del tablero
         if (-1<*c_inicial && *c_inicial <8 && -1<*f_inicial && *f_inicial <8 && -1<*c_final && *c_final<8 && -1<*c_final && *c_final <8);
         else{
-              printf("Posición fuera de rango\n");
+              EnviarMensaje("Posición fuera de rango\n");
               goto inic;
             }
 }
@@ -258,7 +344,6 @@ void cambio_pieza( int f1 , int c1 , int f2 , int c2 ){
     temp = tablero.tab[f1][c1];    //Hacemos el cambio de pieza
     tablero.tab[f2][c2] = temp;
     tablero.tab[f1][c1] = '.' ;
-
 }//Fin cambio_pieza
 
 int finjuego(void)
@@ -270,12 +355,12 @@ salirnos del bucle del main.
     if (turno==0)
         { 
           fin++;
-          printf("\n Felicidades!! El jugador 1 (blancas) ha ganado la partida.\n");
+          EnviarMensaje("\n Felicidades!! El jugador 1 (blancas) ha ganado la partida.\n");
         }
 
     else {
           fin++;
-          printf("\n Felicidades!! El jugador 2 (negras) ha ganado la partida.\n");
+          EnviarMensaje("\n Felicidades!! El jugador 2 (negras) ha ganado la partida.\n");
          }
 return 0;
 }// Fin función terminar juego
