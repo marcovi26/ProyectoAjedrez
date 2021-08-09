@@ -35,7 +35,6 @@ void jugador_negro();
 void cambio_pieza( int f1 , int c1 , int f2 , int c2 );
 int finjuego(void);
 
-
 //variables para la parte de red
 int comunicacion=0;
 int receptor = 0;
@@ -43,14 +42,15 @@ int read_size;
 char buffer_entrada[500]="\0";
 char buffer_salida[500];
 
-struct sockaddr_in info_servidor;
 
+struct sockaddr_in info_servidor;
 
 void EnviarMensaje(char *mensaje) //Función para enviar mensajes al cliente
 {
   strcpy(buffer_salida, mensaje);
   write(comunicacion, buffer_salida, strlen(buffer_salida));
 }
+
 
 int main() {
 
@@ -74,14 +74,13 @@ int main() {
 
     if((read_size = recv(comunicacion , buffer_entrada , 500 , 0)) > 0)
     {
-
       tab_inicializado(); // Iniciamos el tablero con la posición de las fichas
       
       turno= BLANCO; //Definimos un turno de inicio
 
       do
       {
-        system( "cls" ); //Limpiamos la consola, clear si Linux o cls si es Windows
+        
         tab_lleno(); // imprimimos un display del tablero lleno
 
         if( (turno) == 0 )
@@ -92,7 +91,6 @@ int main() {
         {
             jugador_negro();
         }
-        
         turno = 1-turno;   //Con esta operacion hacemos el cambio de turno entre blanco y negro
       }while(fin==0);
     }//fin if
@@ -105,10 +103,10 @@ return 0;
 
 void tab_inicializado(){ //creamos tablero vacío
 
-char fichas[] = "tcadract";    // Un pequeño arreglo para llenar la fila 0 y 7 del tablero
+  char fichas[] = "tcadract";    // Un pequeño arreglo para llenar la fila 0 y 7 del tablero
 
-for(int i = 0; i<8 ;i++){
-  for(int j = 0; j< 8; j++){
+  for(int i = 0; i<8 ;i++){
+    for(int j = 0; j< 8; j++){
       tablero.tab[0][j] = fichas[j];
       
       if(i == 1){
@@ -184,10 +182,10 @@ void tab_lleno(){
     }
 }//final tablleno
 
+
 void jugador_blanco()   //Existen una función para cada jugador
 {   int f1, c1;         //Coordenadas posicion inicial de la pieza
     int f2, c2;         //Coordenadas posicion final de la pieza
-
 
     EnviarMensaje(" \n Siguiente: Jugador 1 - Blancas - Mayuscula\n" ) ;
     again1:
@@ -317,10 +315,10 @@ else if (buffer_entrada[1]=='i')    //Verificamos si corresponde al comando fina
 }
 
 else{     //Lectura de movimiento de pieza
-        *c_inicial = movida[0] - 'a';     //Calculamos un valor numerico para las casillas 
-        *f_inicial = movida[1] - '0';     // restandole valores ascii a dato de entrada
-        *c_final   = movida[3] - 'a';
-        *f_final   = movida[4] - '0';
+        *c_inicial = buffer_entrada[0] - 'a';     //Calculamos un valor numerico para las casillas 
+        *f_inicial = buffer_entrada[1] - '0';     // restandole valores ascii a dato de entrada
+        *c_final   = buffer_entrada[3] - 'a';
+        *f_final   = buffer_entrada[4] - '0';
 
         //Este if consiste en verificar que la eleccion de casillas corresponda a un valor del rango del tablero
         if (-1<*c_inicial && *c_inicial <8 && -1<*f_inicial && *f_inicial <8 && -1<*c_final && *c_final<8 && -1<*c_final && *c_final <8);
