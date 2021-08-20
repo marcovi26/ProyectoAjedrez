@@ -7,3 +7,6 @@ Existe otra rama con la implementación de un modelo cliente-servidor.
 Se compila `gcc Ajedrez.c movida.c -o juego`. Se ingresan los comando de acuerdo a la columna y fila de la ficha que se desea mover y su destino, `a6 a4` o comandos como `retirar` o `finalizar`.
 
 Nota: Este programa se optimizó para replit, pero puede ejecutarse para cualquier entorno GNU/Linux además de Windows, solo cambiar el valor para limpiar la consola de acuerdo al SO `system("cls")` o `system("clear")` en la línea 40.
+
+
+Se puede editar xq es publico, pero al final como en todo repo se hace un pull up request a alguien con privilegios para aceptar el cambio
